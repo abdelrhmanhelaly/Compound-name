@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>تحدي كتابة الصيغ الكيميائية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b1329;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --correct: #22c55e;
+            --wrong: #ef4444;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* شريط اختيار المستويات */
+        .level-selector {
+            display: flex;
+            gap: 6px;
+            background: #0f172a;
+            padding: 5px;
+            border-radius: 12px;
+        }
+
+        .level-tab {
+            flex: 1;
+            padding: 8px 2px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: var(--text-sub);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .level-tab.active {
+            background: #0284c7;
+            color: white;
+            border-color: #38bdf8;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+        }
+
+        /* شريط الإحصائيات مع أعلى سكور */
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            background: #0f172a;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            font-size: 0.92rem;
+            font-weight: 700;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* بيانات مصمم اللعبة */
+        .author-box {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(2, 132, 199, 0.05));
+            border: 1px solid #0284c7;
+            border-radius: 10px;
+            padding: 6px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .author-name { color: #38bdf8; }
+        .author-phone { color: #34d399; direction: ltr; font-weight: 900; }
+
+        /* بطاقة السؤال */
+        .question-card {
+            background: #0f172a;
+            border: 2px dashed #475569;
+            border-radius: 14px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .question-title {
+            color: var(--text-sub);
+            font-size: 0.82rem;
+            margin-bottom: 2px;
+        }
+
+        .question-name {
+            font-size: 1.35rem;
+            font-weight: 900;
+            color: #38bdf8;
+        }
+
+        /* شاشة عرض الصيغة */
+        .answer-display-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .answer-display {
+            width: 100%;
+            min-height: 52px;
+            background: #070d1e;
+            border-radius: 12px;
+            border: 1.5px solid #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            color: #34d399;
+            direction: ltr;
+            padding: 0 45px 0 10px;
+        }
+
+        .answer-display sub, .correction-formula sub, .modal-formula sub {
+            font-size: 1.1rem;
+            color: #facc15;
+            bottom: -0.25em;
+        }
+
+        /* زر التراجع المباشر */
+        .undo-btn {
+            position: absolute;
+            right: 8px;
+            background: #334155;
+            border: 1px solid #475569;
+            color: #f8fafc;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 900;
+            transition: all 0.1s;
+        }
+
+        .undo-btn:active {
+            transform: scale(0.92);
+            background: #475569;
+        }
+
+        /* تنبيه الإجابة الصحيحة */
+        .correction-box {
+            background: rgba(239, 68, 68, 0.12);
+            border: 1.5px solid #ef4444;
+            border-radius: 12px;
+            padding: 8px 10px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #fca5a5;
+            line-height: 1.4;
+        }
+
+        .correction-formula {
+            display: inline-block;
+            direction: ltr;
+            color: #fff;
+            font-size: 1.3rem;
+            font-weight: 900;
+            margin-right: 6px;
+        }
+
+        .reason-text {
+            display: block;
+            margin-top: 4px;
+            color: #fde047;
+            font-size: 0.85rem;
+            font-weight: 700;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 4px 6px;
+            border-radius: 6px;
+        }
+
+        /* شبكة الأزرار */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 2px 0;
+            width: 100%;
+        }
+
+        .grid-btn {
+            background: #334155;
+            border: none;
+            color: white;
+            padding: 12px 2px;
+            font-size: 1.25rem;
+            font-weight: 900;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #0f172a;
+            transition: all 0.1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .grid-btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #0f172a;
+        }
+
+        .grid-btn.num-btn {
+            background: #475569;
+            color: #facc15;
+            border: 1px solid rgba(250, 204, 21, 0.3);
+        }
+
+        /* أزرار التحكم بالأسفل */
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 11px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+
+        .skip-btn { background: #eab308; color: #0f172a; }
+        .end-btn { background: #ef4444; color: white; }
+        .control-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+
+        .shake { animation: shake 0.35s ease-in-out; }
+
+        /* نافذة النتيجة النهائية */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px; z-index: 100;
+        }
+
+        .modal-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 22px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            border: 1px solid #475569;
+        }
+
+        .modal-title { font-size: 1.45rem; font-weight: 900; margin-bottom: 6px; }
+        .score-val { font-size: 2.2rem; font-weight: 900; color: #38bdf8; margin: 8px 0; }
+
+        .modal-last-compound {
+            background: #0f172a;
+            border: 1.5px solid #ef4444;
+            border-radius: 12px;
+            padding: 10px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .modal-last-title { color: #f87171; font-size: 0.88rem; font-weight: 700; margin-bottom: 4px; }
+        .modal-compound-name { color: var(--text-main); font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+        .modal-formula { direction: ltr; font-size: 1.5rem; font-weight: 900; color: #34d399; letter-spacing: 1.5px; }
+        .modal-reason { color: #fde047; font-size: 0.85rem; font-weight: 700; margin-top: 6px; line-height: 1.35; }
+
+        .modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .play-again-btn {
+            width: 100%; padding: 11px; background: #22c55e;
+            border: none; color: white; font-size: 1rem;
+            font-weight: 700; border-radius: 10px; cursor: pointer;
+        }
+
+        .share-btn {
+            width: 100%; padding: 11px; background: #25d366;
+            border: none; color: white; font-size: 1rem;
+            font-weight: 700; border-radius: 10px; cursor: pointer;
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div class="game-container" id="gameView">
+        <div class="level-selector">
+            <button class="level-tab active" onclick="switchLevel(0)">المستوى 1</button>
+            <button class="level-tab" onclick="switchLevel(1)">المستوى 2</button>
+            <button class="level-tab" onclick="switchLevel(2)">المستوى 3</button>
+            <button class="level-tab" onclick="switchLevel(3)">المستوى 4</button>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-item" style="color: #ef4444;">❤️ <span id="livesText">3</span></div>
+            <div class="stat-item" style="color: #eab308;">⚡ <span id="skipsText">3</span></div>
+            <div class="stat-item" style="color: #38bdf8;">🏆 <span id="scoreText">0</span></div>
+            <div class="stat-item" style="color: #a855f7;">👑 <span id="highScoreText">0</span></div>
+        </div>
+
+        <div class="author-box">
+            <span class="author-name">👨‍🏫 مصمم اللعبة: أ/ عبد الرحمن عبد الله</span>
+            <span class="author-phone">📞 01021779644</span>
+        </div>
+
+        <div class="question-card">
+            <div class="question-title">اكتب الصيغة الكيميائية للمركب التالي:</div>
+            <div class="question-name" id="compoundName">---</div>
+        </div>
+
+        <div class="answer-display-wrapper">
+            <div class="answer-display" id="typedFormula"></div>
+            <button class="undo-btn" title="تراجع عن آخر رمز" onclick="undoLastToken()">⌫</button>
+        </div>
+
+        <div class="correction-box hidden" id="correctionBox">
+            ⚠️ خطأ! الصيغة الصحيحة هي: <span class="correction-formula" id="correctFormulaDisplay"></span>
+            <span class="reason-text" id="reasonDisplay"></span>
+        </div>
+
+        <div class="grid-container" id="keyGrid"></div>
+
+        <div class="controls">
+            <button class="control-btn skip-btn" id="skipBtn" onclick="useSkip()">تخطي (3)</button>
+            <button class="control-btn end-btn" onclick="finishGame()">إنهاء اللعبة</button>
+        </div>
+    </div>
+
+    <!-- نافذة النهاية والمشاركة -->
+    <div class="modal hidden" id="resultModal">
+        <div class="modal-card">
+            <div class="modal-title" id="resultTitle">انتهت اللعبة!</div>
+            <p style="color: var(--text-sub);">نتيجتك النهائية المحققة:</p>
+            <div class="score-val" id="finalScoreDisplay">0</div>
+
+            <div class="modal-last-compound hidden" id="modalCorrectionBox">
+                <div class="modal-last-title">المركب الأخير الذي أخطأت فيه:</div>
+                <div class="modal-compound-name" id="modalLastCompoundName"></div>
+                <div class="modal-formula" id="modalLastCompoundFormula"></div>
+                <div class="modal-reason" id="modalLastCompoundReason"></div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="share-btn" onclick="shareToWhatsApp()">📲 شارك نتيجتك مع أستاذك</button>
+                <button class="play-again-btn" onclick="initGame()">🔄 إعادة اللعب</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        const soundCorrect = () => playTone(600, 'sine', 0.15);
+        const soundError = () => playTone(180, 'sawtooth', 0.25);
+        const soundWin = () => {
+            playTone(440, 'triangle', 0.1);
+            setTimeout(() => playTone(587, 'triangle', 0.1), 100);
+            setTimeout(() => playTone(880, 'triangle', 0.2), 200);
+        };
+
+        function parseFormulaTokens(formula) {
+            return formula.match(/[A-Z][a-z]?|[0-9]|\(|\)/g) || [];
+        }
+
+        function formatSubscriptHTML(tokens) {
+            return tokens.map(t => !isNaN(t) ? `<sub>${t}</sub>` : t).join('');
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        const levels = [
+            {
+                name: "المستوى الأول",
+                fixedSymbols: ["1", "2", "3", "4"],
+                compounds: [
+                    { name: "كلوريد الصوديوم", formula: "NaCl", reason: "الصوديوم أحادي (1) والكلوريد أحادي (1) ← التكافؤات 1:1 تختصر." },
+                    { name: "بروميد البوتاسيوم", formula: "KBr", reason: "البوتاسيوم أحادي (1) والبروميد أحادي (1) ← التكافؤات متساوية." },
+                    { name: "يوديد الليثيوم", formula: "LiI", reason: "الليثيوم أحادي (1) واليوديد أحادي (1) ← التكافؤات 1:1." },
+                    { name: "فلوريد الكالسيوم", formula: "CaF2", reason: "الكالسيوم ثنائي (2) والفلوريد أحادي (1) ← بتبادل التكافؤات يأخذ الفلوريد 2." },
+                    { name: "أكسيد الماغنسيوم", formula: "MgO", reason: "الماغنسيوم ثنائي (2) والأكسجين ثنائي (2) ← اختصار التكافؤات المتساوية." },
+                    { name: "كبريتيد الألومنيوم", formula: "Al2S3", reason: "الألومنيوم ثلاثي (3) والكبريتيد ثنائي (2) ← تبادل التكافؤات." },
+                    { name: "نترات الفضة", formula: "AgNO3", reason: "الفضة أحادية (1) والنترات مجموعة أحادية (1) ← لا حاجة لأقواس." },
+                    { name: "كلوريد النحاس II", formula: "CuCl2", reason: "النحاس ثنائي (2) والكلوريد أحادي (1) ← بتبادل التكافؤات." },
+                    { name: "أكسيد الحديد II", formula: "FeO", reason: "الحديد ثنائي (2) والأكسجين ثنائي (2) ← تختصر النسبة 1:1." },
+                    { name: "كلوريد الحديد III", formula: "FeCl3", reason: "الحديد ثلاثي (3) والكلوريد أحادي (1) ← يأخذ الكلور 3." },
+                    { name: "بروميد الرصاص II", formula: "PbBr2", reason: "الرصاص ثنائي (2) والبروميد أحادي (1) ← تبادل التكافؤات." },
+                    { name: "كلوريد الذهب III", formula: "AuCl3", reason: "الذهب ثلاثي (3) والكلوريد أحادي (1) ← يأخذ الكلور 3." },
+                    { name: "كبريتيد الخارصين", formula: "ZnS", reason: "الخارصين ثنائي (2) والكبريتيد ثنائي (2) ← تختصر التكافؤات." },
+                    { name: "جزيء الهيدروجين", formula: "H2", reason: "جزيء ثنائي الذرة في الحالة الغازية الطبيعية." },
+                    { name: "جزيء النيتروجين", formula: "N2", reason: "جزيء ثنائي الذرة من الغازات النشطة." },
+                    { name: "جزيء الأكسجين", formula: "O2", reason: "جزيء ثنائي الذرة في الحالة الغازية." },
+                    { name: "جزيء الفلور", formula: "F2", reason: "من الهالوجينات ثنائية الذرة." },
+                    { name: "جزيء الكلور", formula: "Cl2", reason: "من الهالوجينات ثنائية الذرة." },
+                    { name: "جزيء البروم", formula: "Br2", reason: "عنصر هالوجيني ثنائي الذرة." },
+                    { name: "جزيء اليود", formula: "I2", reason: "عنصر هالوجيني ثنائي الذرة." },
+                    { name: "غاز الهيليوم", formula: "He", reason: "غاز خامل جزيئه أحادي الذرة." },
+                    { name: "غاز النيون", formula: "Ne", reason: "غاز نبيل جزيئه أحادي الذرة." },
+                    { name: "غاز الأرجون", formula: "Ar", reason: "غاز نبيل أحادي الذرة ومكتمل الغلاف." },
+                    { name: "غاز الكريبتون", formula: "Kr", reason: "غاز نبيل أحادي الذرة." },
+                    { name: "غاز الزينون", formula: "Xe", reason: "غاز نبيل أحادي الذرة." },
+                    { name: "غاز الرادون", formula: "Rn", reason: "غاز خامل مشع أحادي الذرة." },
+                    { name: "ثاني أكسيد الكربون", formula: "CO2", reason: "ذرة كربون ترتبط بذرتي أكسجين بروابط ثنائية." },
+                    { name: "ثاني أكسيد الكبريت", formula: "SO2", reason: "الكبريت رباعي مع الأكسجين الثنائي بعد الاختصار." },
+                    { name: "ثالث أكسيد الكبريت", formula: "SO3", reason: "الكبريت سداسي مع الأكسجين الثنائي 6:2 تختصر لـ 3:1." },
+                    { name: "الماء", formula: "H2O", reason: "الأكسجين ثنائي (2) والهيدروجين أحادي (1) ← تبادل التكافؤات." }
+                ]
+            },
+            {
+                name: "المستوى الثاني",
+                fixedSymbols: ["1", "2", "3", "(", ")"],
+                compounds: [
+                    { name: "كربونات الصوديوم", formula: "Na2CO3", reason: "الصوديوم أحادي (1) والكربونات ثنائية (2) ← يأخذ الصوديوم 2." },
+                    { name: "بيكربونات البوتاسيوم", formula: "KHCO3", reason: "البوتاسيوم أحادي (1) والبيكربونات أحادية (1) ← النسبة 1:1." },
+                    { name: "نيترات الماغنسيوم", formula: "Mg(NO3)2", reason: "الماغنسيوم ثنائي (2) والنترات أحادية (1) ← نترات داخل قوس مع 2." },
+                    { name: "نيتريت الكالسيوم", formula: "Ca(NO2)2", reason: "الكالسيوم ثنائي (2) والنيتريت أحادي (1) ← نيتريت داخل قوس مع 2." },
+                    { name: "كبريتات الألومنيوم", formula: "Al2(SO4)3", reason: "الألومنيوم ثلاثي (3) والكبريتات ثنائية (2) ← تبادل الأرقام والأقواس." },
+                    { name: "كبريتيت الصوديوم", formula: "Na2SO3", reason: "الصوديوم أحادي (1) والكبريتيت ثنائي (2) ← يأخذ الصوديوم 2." },
+                    { name: "هيدروكسيد النحاس II", formula: "Cu(OH)2", reason: "النحاس ثنائي (2) والهيدروكسيد أحادي (1) ← قوس هيدروكسيد ومعه 2." },
+                    { name: "هيدروكسيد الحديد III", formula: "Fe(OH)3", reason: "الحديد ثلاثي (3) والهيدروكسيد أحادي (1) ← قوس هيدروكسيد ومعه 3." },
+                    { name: "فوسفات الكالسيوم", formula: "Ca3(PO4)2", reason: "الكالسيوم ثنائي (2) والفوسفات ثلاثية (3) ← تبادل التكافؤات والأقواس." },
+                    { name: "فوسفات الأمونيوم", formula: "(NH4)3PO4", reason: "الأمونيوم أحادي (1) والفوسفات ثلاثية (3) ← مجموعة الأمونيوم داخل قوس ومعه 3." },
+                    { name: "كبريتات النحاس I", formula: "Cu2SO4", reason: "النحاس أحادي (1) والكبريتات ثنائية (2) ← يأخذ النحاس 2." },
+                    { name: "نترات الرصاص IV", formula: "Pb(NO3)4", reason: "الرصاص رباعي (4) والنترات أحادية (1) ← نترات داخل قوس ومعه 4." },
+                    { name: "فوسفات الذهب III", formula: "AuPO4", reason: "الذهب ثلاثي (3) والفوسفات ثلاثية (3) ← اختصار التكافؤات 1:1." },
+                    { name: "حمض الهيدروكلوريك", formula: "HCl", reason: "حمض هالوجيني مكون من H أحادي و Cl أحادي." },
+                    { name: "حمض الهيدروبروميك", formula: "HBr", reason: "حمض هالوجيني مكون من H أحادي و Br أحادي." },
+                    { name: "حمض الهيدرو يوديك", formula: "HI", reason: "حمض هالوجيني مكون من H أحادي و I أحادي." },
+                    { name: "حمض الهيدرو فلوريك", formula: "HF", reason: "حمض هالوجيني مكون من H أحادي و F أحادي." },
+                    { name: "حمض الكبريتيك", formula: "H2SO4", reason: "الكبريتات ثنائية (2) فترتبط بذرتي هيدروجين H2." },
+                    { name: "حمض الفوسفوريك", formula: "H3PO4", reason: "الفوسفات ثلاثية (3) فترتبط بثلاث ذرات هيدروجين H3." },
+                    { name: "حمض النيتريك", formula: "HNO3", reason: "النترات أحادية (1) فترتبط بذرة هيدروجين H واحدة." }
+                ]
+            },
+            {
+                name: "المستوى الثالث",
+                fixedSymbols: ["2", "3", "4", "7", "(", ")"],
+                compounds: [
+                    { name: "ثاني كرومات البوتاسيوم", formula: "K2Cr2O7", reason: "البوتاسيوم أحادي (1) ومجموعة ثاني كرومات ثنائية (2) ← يأخذ البوتاسيوم 2." },
+                    { name: "كرومات الصوديوم", formula: "Na2CrO4", reason: "الصوديوم أحادي (1) والكرومات ثنائية (2) ← يأخذ الصوديوم 2." },
+                    { name: "برمنجنات البوتاسيوم", formula: "KMnO4", reason: "البوتاسيوم أحادي (1) والبرمنجنات أحادية (1) ← التكافؤات متساوية 1:1." },
+                    { name: "منجنات الصوديوم", formula: "Na2MnO4", reason: "مجموعة المنجنات ثنائية (2) بينما الصوديوم أحادي ← يأخذ الصوديوم 2." },
+                    { name: "ثيوكبريتات الصوديوم", formula: "Na2S2O3", reason: "مجموعة الثيوكبريتات ثنائية (2) والصوديوم أحادي ← Na2." },
+                    { name: "رباعي ثيونات الصوديوم", formula: "Na2S4O6", reason: "مجموعة رباعي ثيونات ثنائية (2) والصوديوم أحادي ← Na2." },
+                    { name: "ألومينات الصوديوم", formula: "NaAlO2", reason: "الصوديوم أحادي ومجموعة الألومينات أحادية (1) ← النسبة 1:1." },
+                    { name: "خارصينات البوتاسيوم", formula: "K2ZnO2", reason: "مجموعة الخارصينات ثنائية (2) والبوتاسيوم أحادي ← K2." },
+                    { name: "حمض النيتروز", formula: "HNO2", reason: "مجموعة النيتريت أحادية (1) فترتبط بـ H واحدة." },
+                    { name: "حمض الكبريتوز", formula: "H2SO3", reason: "مجموعة الكبريتيت ثنائية (2) فترتبط بـ H2." },
+                    { name: "حمض الهيدروكبريتيك", formula: "H2S", reason: "الكبريت ثنائي (2) فيرتبط بذرتي هيدروجين H2." },
+                    { name: "حمض الثيوكبريتيك", formula: "H2S2O3", reason: "مجموعة الثيوكبريتات ثنائية (2) فترتبط بـ H2." },
+                    { name: "ثاني كرومات الأمونيوم", formula: "(NH4)2Cr2O7", reason: "الأمونيوم أحادي (1) وثاني كرومات ثنائية (2) ← أمونيوم داخل قوس ومعه 2." },
+                    { name: "برمنجنات الكالسيوم", formula: "Ca(MnO4)2", reason: "الكالسيوم ثنائي (2) والبرمنجنات أحادية (1) ← برمنجنات داخل قوس ومعها 2." }
+                ]
+            },
+            {
+                name: "المستوى الرابع",
+                fixedSymbols: ["2", "3", "4", "5", "(", ")"],
+                compounds: [
+                    { name: "الميثان", formula: "CH4", reason: "أبسط ألكان: ذرة كربون رباعية مع 4 ذرات هيدروجين." },
+                    { name: "الإيثان", formula: "C2H6", reason: "ألكان ذو ذرتي كربون يتبع القانون العام CnH2n+2." },
+                    { name: "البروبان", formula: "C3H8", reason: "ألكان ذو 3 ذرات كربون يتبع الصيغة CnH2n+2." },
+                    { name: "حمض الأسيتيك", formula: "CH3COOH", reason: "حمض كربوكسيلي يتكون من شق ميثيل ومجموعة كربوكسيل." },
+                    { name: "الميثانول", formula: "CH3OH", reason: "كحول أحادي الهيدروكسيل بمجموعة ميثيل CH3." },
+                    { name: "الإيثانول", formula: "C2H5OH", reason: "كحول أحادي الهيدروكسيل بمجموعة إيثيل C2H5." },
+                    { name: "أسيتات الصوديوم", formula: "CH3COONa", reason: "ملح عضوي يبدأ بالأيون السالب (الأسيتات) ثم الفلز (الصوديوم)." },
+                    { name: "أسيتات الميثيل", formula: "CH3COOCH3", reason: "إستر عضوي ناتج من حمض الأسيتيك والكحول الميثيلي." },
+                    { name: "أسيتات الرصاص II", formula: "(CH3COO)2Pb", reason: "الأسيتات أحادية والرصاص ثنائي ← توضع الأسيتات داخل قوس ومعها 2." }
+                ]
+            }
+        ];
+
+        let currentLevelIdx = 0;
+        let lives = 3;
+        let skips = 3;
+        let score = 0;
+        let highScore = parseInt(localStorage.getItem('chem_high_score') || '0');
+        let currentTokens = [];
+        let tokenIndex = 0;
+        let currentCompound = null;
+        let questionPools = [[], [], [], []];
+
+        function initGame() {
+            document.getElementById('resultModal').classList.add('hidden');
+            lives = 3;
+            skips = 3;
+            score = 0;
+            updateStatusUI();
+            loadQuestion();
+        }
+
+        function switchLevel(lvlIndex) {
+            currentLevelIdx = lvlIndex;
+            const tabs = document.querySelectorAll('.level-tab');
+            tabs.forEach((tab, idx) => {
+                tab.classList.toggle('active', idx === lvlIndex);
+            });
+            loadQuestion();
+        }
+
+        function updateStatusUI() {
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('chem_high_score', highScore);
+            }
+            document.getElementById('livesText').innerText = lives;
+            document.getElementById('skipsText').innerText = skips;
+            document.getElementById('scoreText').innerText = score;
+            document.getElementById('highScoreText').innerText = highScore;
+            document.getElementById('skipBtn').innerText = `تخطي (${skips})`;
+            document.getElementById('skipBtn').disabled = (skips <= 0);
+        }
+
+        // سحب مركب دون تكرار
+        function getNextCompound(lvlIdx) {
+            if (!questionPools[lvlIdx] || questionPools[lvlIdx].length === 0) {
+                questionPools[lvlIdx] = shuffleArray([...levels[lvlIdx].compounds]);
+            }
+            return questionPools[lvlIdx].pop();
+        }
+
+        function loadQuestion() {
+            document.getElementById('correctionBox').classList.add('hidden');
+            const level = levels[currentLevelIdx];
+            currentCompound = getNextCompound(currentLevelIdx);
+            currentTokens = parseFormulaTokens(currentCompound.formula);
+            tokenIndex = 0;
+
+            document.getElementById('compoundName').innerText = currentCompound.name;
+            document.getElementById('typedFormula').innerHTML = "";
+            renderGrid(level, currentTokens);
+        }
+
+        function renderGrid(level, requiredTokens) {
+            const keyGrid = document.getElementById('keyGrid');
+            keyGrid.innerHTML = '';
+
+            const fixedSpecial = new Set(level.fixedSymbols);
+            requiredTokens.forEach(t => {
+                if (!isNaN(t) || t === '(' || t === ')') fixedSpecial.add(t);
+            });
+
+            let elementSet = new Set();
+            requiredTokens.forEach(t => {
+                if (isNaN(t) && t !== '(' && t !== ')') elementSet.add(t);
+            });
+
+            const commonDistractors = ["H", "O", "Na", "Cl", "K", "Ca", "S", "N", "C", "Fe", "Cu", "Al", "Br", "I", "Zn", "Pb", "Ag", "Mg"];
+            for (let el of commonDistractors) {
+                if (fixedSpecial.size + elementSet.size >= 12) break;
+                elementSet.add(el);
+            }
+
+            const finalSpecial = Array.from(fixedSpecial);
+            let finalElements = Array.from(elementSet);
+            finalElements = shuffleArray(finalElements);
+
+            const allButtons = [...finalSpecial, ...finalElements];
+
+            allButtons.forEach(sym => {
+                const btn = document.createElement('button');
+                const isSpecial = !isNaN(sym) || sym === '(' || sym === ')';
+                btn.className = `grid-btn ${isSpecial ? 'num-btn' : ''}`;
+                btn.innerText = sym;
+                btn.onclick = () => handleChoice(sym);
+                keyGrid.appendChild(btn);
+            });
+        }
+
+        function handleChoice(chosenSymbol) {
+            const targetSymbol = currentTokens[tokenIndex];
+
+            const isTargetBracket = (targetSymbol === '(' || targetSymbol === ')');
+            const isChosenBracket = (chosenSymbol === '(' || chosenSymbol === ')');
+            const isMatch = (chosenSymbol === targetSymbol) || (isTargetBracket && isChosenBracket);
+
+            if (isMatch) {
+                soundCorrect();
+                tokenIndex++;
+                document.getElementById('typedFormula').innerHTML = formatSubscriptHTML(currentTokens.slice(0, tokenIndex));
+
+                if (tokenIndex === currentTokens.length) {
+                    score += 10;
+                    updateStatusUI();
+                    soundWin();
+
+                    setTimeout(() => {
+                        loadQuestion();
+                    }, 500);
+                }
+            } else {
+                soundError();
+                lives--;
+                updateStatusUI();
+
+                const correctionBox = document.getElementById('correctionBox');
+                document.getElementById('correctFormulaDisplay').innerHTML = formatSubscriptHTML(currentTokens);
+                document.getElementById('reasonDisplay').innerText = `💡 التفسير: ${currentCompound.reason}`;
+                correctionBox.classList.remove('hidden');
+
+                const container = document.getElementById('gameView');
+                container.classList.add('shake');
+                setTimeout(() => container.classList.remove('shake'), 400);
+
+                if (lives <= 0) {
+                    setTimeout(() => {
+                        showGameOver("نفدت المحاولات! لقد خسرت بسبب كثرة الأخطاء", true);
+                    }, 800);
+                }
+            }
+        }
+
+        // ميزة التراجع لحذف آخر مدخل دون خسارة المحاولة
+        function undoLastToken() {
+            if (tokenIndex > 0) {
+                tokenIndex--;
+                document.getElementById('typedFormula').innerHTML = formatSubscriptHTML(currentTokens.slice(0, tokenIndex));
+                playTone(350, 'sine', 0.1);
+            }
+        }
+
+        function useSkip() {
+            if (skips <= 0) return;
+            skips--;
+            updateStatusUI();
+            document.getElementById('typedFormula').innerHTML = formatSubscriptHTML(currentTokens);
+            soundCorrect();
+
+            setTimeout(() => {
+                loadQuestion();
+            }, 800);
+        }
+
+        function finishGame() {
+            showGameOver("تم إنهاء اللعبة يدويًا", false);
+        }
+
+        function showGameOver(title, isFailed) {
+            updateStatusUI();
+            document.getElementById('resultTitle').innerText = title;
+            document.getElementById('finalScoreDisplay').innerText = `${score} نقطة`;
+
+            const modalCorrection = document.getElementById('modalCorrectionBox');
+            if (isFailed && currentCompound) {
+                document.getElementById('modalLastCompoundName').innerText = currentCompound.name;
+                document.getElementById('modalLastCompoundFormula').innerHTML = formatSubscriptHTML(currentTokens);
+                document.getElementById('modalLastCompoundReason').innerText = `💡 التفسير: ${currentCompound.reason}`;
+                modalCorrection.classList.remove('hidden');
+            } else {
+                modalCorrection.classList.add('hidden');
+            }
+
+            document.getElementById('resultModal').classList.remove('hidden');
+        }
+
+        // مشاركة النتيجة عبر واتساب
+        function shareToWhatsApp() {
+            const shareText = `🧪 لقد حققت ${score} نقطة في تحدي كتابة الصيغ الكيميائية!\nمعلم المادة: أ/ عبد الرحمن عبد الله (01021779644)`;
+            const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+            window.open(url, '_blank');
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
